@@ -1,18 +1,19 @@
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 
-const URL = "https://www.amazon.co.uk/";
+const URL = "https://www.amazon.co.uk/s?k=";
+const searchTerm = "Windows+10+Laptop";
 
 async function monitor() {
     let page = await browse();
     await getAllProductsInSearch(page);
-    await getProductInfo(page);
+    // await getProductInfo(page);
 }
 
 async function browse() {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.goto(URL);
+    await page.goto(URL + searchTerm, { waitUntil: "networkidle2" });
     return page;
 }
 
@@ -38,8 +39,6 @@ async function getProductInfo(page) {
 }
 
 async function getAllProductsInSearch(page) {
-    await page.reload();
-
     let html = await page.evaluate(() => document.body.innerHTML);
     const $ = cheerio.load(html);
 
