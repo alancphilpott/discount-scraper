@@ -10,35 +10,29 @@ async function monitor() {
 }
 
 async function browse() {
-    try {
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.goto(URL);
-        return page;
-
-        // await browser.close();
-    } catch (error) {
-        console.log(error);
-    }
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(URL);
+    return page;
 }
 
 async function checkPrice(page) {
-    try {
-        await page.reload();
+    await page.reload();
 
-        let html = await page.evaluate(() => document.body.innerHTML);
-        const $ = cheerio.load(html);
+    let html = await page.evaluate(() => document.body.innerHTML);
+    const $ = cheerio.load(html);
 
-        // $("#priceblock_ourprice", html).each(function () {
-        //     let price = $(this).text();
-        //     console.log(price);
-        // })
+    const productTitle = $("#productTitle").text().trim();
+    console.log(productTitle)
 
-        const price = $("#priceblock_ourprice");
-        console.log(price.text());
-    } catch (error) {
-        console.log(error);
-    }
+    const originalPrice = $(".priceBlockStrikePriceString").text().trim();
+    console.log(originalPrice)
+
+    const discountPrice = $("#priceblock_ourprice").text();
+    console.log(discountPrice);
+
+    const discountAmount = $(".priceBlockSavingsString").text().match(/\((.+?)\)/)[1];
+    console.log(discountAmount);
 }
 
 monitor();
