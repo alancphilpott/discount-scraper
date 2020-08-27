@@ -7,7 +7,9 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
 
 (async () => {
     // Launch Browser and Go To Page
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        defaultViewport: null
+    });
     const page = await browser.newPage();
     await page.goto(URL + search_term, { waitUntil: "networkidle2" });
 
@@ -23,7 +25,7 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
     // Load The HTML Into Variable
     let page_html = await page.evaluate(() => document.body.innerHTML);
     await page.close();
-    await browser.close();
+    // await browser.close();
 
     const $ = cheerio.load(page_html);
 
@@ -37,7 +39,7 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
             .trim();
     });
 
-    // Visit Each Products Page
+    // Filter Links to Products Only
     let links = [];
     let productLinks = [];
     $("div[data-index]").each(function (i) {
@@ -45,26 +47,16 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
         productLinks = links.filter((link) => link_regex.test(link));
     });
 
+    // Visit Each Products Page
+    const productPage = await browser.newPage();
     for (let i = 0; i < productLinks.length; i++) {
-        const linkToVisit = URL + productLinks[i];
-        console.log(`Visiting Link ${linkToVisit}`);
-
-        const productBrowser = await puppeteer.launch({
-            defaultViewport: null
-        });
-        const productPage = await productBrowser.newPage();
-        await productPage.setViewport({
-            width: 1600,
-            height: 900,
-            deviceScaleFactor: 1
-        });
-        await productPage.goto(linkToVisit, {
+        await productPage.goto(URL + productLinks[i], {
             waitUntil: "networkidle2"
         });
-        await productPage.screenshot({ path: `screens/screen${i}.png` });
-        await productPage.close();
-        await productBrowser.close();
-    }
 
-    // Print Product Data
+        await productPage.screenshot({ path: `screens/screen${i}.png` });
+    }
+    await productPage.close();
+
+    await browser.close();
 })();
