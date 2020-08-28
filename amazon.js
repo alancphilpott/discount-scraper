@@ -2,8 +2,11 @@ const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 
 const URL = "https://www.amazon.co.uk";
-const search_term = "/s?k=RTX+2060";
+const search_term = "/s?k=RTX+2070";
 const link_regex = new RegExp(/^\/(?!gp).*/i);
+let discount_products = [];
+let $ = null;
+const Product = require("./Product");
 
 (async () => {
     // Launch Browser and Go To Page
@@ -27,9 +30,10 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
     await page.close();
     // await browser.close();
 
-    const $ = cheerio.load(page_html);
+    $ = cheerio.load(page_html);
 
     // Get The Pages Products
+    console.log("Getting Products on Page...");
     const products = [];
     $("div[data-index]").each(function (i) {
         products[i] = $(this)
@@ -40,6 +44,7 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
     });
 
     // Filter Links to Products Only
+    console.log("Optimizing Results...");
     let links = [];
     let productLinks = [];
     $("div[data-index]").each(function (i) {
@@ -48,15 +53,66 @@ const link_regex = new RegExp(/^\/(?!gp).*/i);
     });
 
     // Visit Each Products Page
+    console.log("Performing Magic...");
     const productPage = await browser.newPage();
     for (let i = 0; i < productLinks.length; i++) {
         await productPage.goto(URL + productLinks[i], {
             waitUntil: "networkidle2"
         });
 
-        await productPage.screenshot({ path: `screens/screen${i}.png` });
+        // Retrieve Product Props
+        let product_html = await productPage.evaluate(
+            () => document.body.innerHTML
+        );
+        $ = cheerio.load(product_html);
+
+        const product_title = $("#productTitle").text().trim();
+        // Remove Currency Symbol From Prices
+        let original_price = $(".priceBlockStrikePriceString")
+            .text()
+            .trim()
+            .replace(/£/g, "");
+        let discount_price = $("#priceblock_ourprice").text().replace(/£/g, "");
+
+        // Check Cents Amount
+        if (original_price.includes(".")) {
+            original_price = original_price.substr(
+                0,
+                original_price.length - 3
+            );
+        }
+        if (discount_price.includes(".")) {
+            discount_price = discount_price.substr(
+                0,
+                discount_price.length - 3
+            );
+        }
+
+        // Calculate Discount Amount
+        let discount_amount = 0;
+        let discount_diff = original_price - discount_price;
+        if (original_price != "" && discount_price != "")
+            discount_amount = ((discount_diff / original_price) * 100).toFixed(
+                2
+            );
+
+        // Ensure Required Properties Are Set
+        if (product_title != "" && original_price != "") {
+            console.log("Deal Found...");
+            discount_products.push(
+                new Product(
+                    product_title,
+                    original_price,
+                    discount_price,
+                    discount_amount
+                )
+            );
+        }
     }
     await productPage.close();
 
     await browser.close();
+
+    // Display The Results
+    discount_products.forEach((product) => console.log(product.getInfo()));
 })();
