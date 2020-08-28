@@ -2,7 +2,7 @@ const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 
 const URL = "https://www.amazon.co.uk";
-const search_term = "/s?k=RTX+2080";
+const search_term = "/s?k=RTX+2060";
 const link_regex = new RegExp(/^\/(?!gp).*/i);
 let discount_products = [];
 let $ = null;
@@ -68,30 +68,31 @@ const Product = require("./Product");
 
         const product_title = $("#productTitle").text().trim();
         // Remove Currency Symbol From Prices
-        let original_price = $(".priceBlockStrikePriceString")
-            .text()
-            .trim()
-            .replace(/£/g, "");
-        let discount_price = $("#priceblock_ourprice").text().replace(/£/g, "");
+        let original_price = parseFloat(
+            $(".priceBlockStrikePriceString")
+                .text()
+                .trim()
+                .replace(/£/g, "")
+                .replace(/,/, "")
+        );
+        let discount_price = parseFloat(
+            $("#priceblock_ourprice").text().replace(/£/g, "").replace(/,/, "")
+        );
 
         // Calculate Discount Amount
         let discount_amount = 0;
         let discount_diff = original_price - discount_price;
+
         if (
-            original_price != "" &&
-            discount_price != "" &&
+            !isNaN(original_price) &&
+            !isNaN(discount_price) &&
             original_price != discount_price
-        )
+        ) {
             discount_amount = ((discount_diff / original_price) * 100).toFixed(
                 2
             );
 
-        // Ensure Required Properties Are Set
-        if (
-            product_title != "" &&
-            original_price != "" &&
-            discount_amount != 0
-        ) {
+            // Add Discount Products to Results
             console.log("Deal Found...");
             discount_products.push(
                 new Product(
