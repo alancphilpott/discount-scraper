@@ -11,7 +11,9 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "bitly": "^7.1.0",
         "cheerio": "^1.0.0-rc.3",
+        "config": "^3.3.1",
         "puppeteer": "^5.2.1"
     }
 }
