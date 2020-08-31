@@ -17,13 +17,13 @@ const Product = require("./Product");
     await page.goto(URL + search_term, { waitUntil: "networkidle2" });
 
     // Accept The Page Cookies
-    try {
-        await page.click("input#sp-cc-accept");
-        console.log("Accepted Cookies.");
-    } catch (err) {
-        console.log("Cookies Already Accepted.");
-    }
-    await page.reload({ waitUntil: "networkidle2" });
+    // try {
+    //     await page.click("input#sp-cc-accept");
+    //     console.log("Accepted Cookies.");
+    // } catch (err) {
+    //     console.log("Cookies Already Accepted.");
+    // }
+    // await page.reload({ waitUntil: "networkidle2" });
 
     // Load The HTML Into Variable
     let page_html = await page.evaluate(() => document.body.innerHTML);
@@ -107,6 +107,11 @@ const Product = require("./Product");
     await productPage.close();
 
     await browser.close();
+
+    // Order Products By Highest Discount
+    discount_products.sort(
+        (a, b) => parseFloat(b.discountAmount) - parseFloat(a.discountAmount)
+    );
 
     // Display The Results
     discount_products.forEach((product) => console.log(product.getInfo()));
