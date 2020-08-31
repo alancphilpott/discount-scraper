@@ -1,5 +1,12 @@
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
+const config = require("config");
+const BitlyClient = require("bitly").BitlyClient;
+
+let bitly = null;
+if (!config.get("bitlyAccessToken"))
+    throw new Error("FATAL ERRORL: Unable To Detect Bitly Access Token");
+else bitly = new BitlyClient(config.get("bitlyAccessToken"));
 
 const URL = "https://www.amazon.co.uk";
 const search_term = "/s?k=RTX+2060";
@@ -56,7 +63,9 @@ const Product = require("./Product");
     console.log("Performing Magic...");
     const productPage = await browser.newPage();
     for (let i = 0; i < productLinks.length; i++) {
-        await productPage.goto(URL + productLinks[i], {
+        const link = URL + productLinks[i];
+
+        await productPage.goto(link, {
             waitUntil: "networkidle2"
         });
 
@@ -99,7 +108,8 @@ const Product = require("./Product");
                     product_title,
                     original_price,
                     discount_price,
-                    discount_amount
+                    discount_amount,
+                    await shorternURL(link)
                 )
             );
         } else console.log("Discarding Rubbish Deal.");
@@ -116,3 +126,8 @@ const Product = require("./Product");
     // Display The Results
     discount_products.forEach((product) => console.log(product.getInfo()));
 })();
+
+async function shorternURL(URL) {
+    const response = await bitly.shorten(URL);
+    return response.link;
+}
