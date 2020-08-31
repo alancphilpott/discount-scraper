@@ -9,7 +9,9 @@ if (!config.get("bitlyAccessToken"))
 else bitly = new BitlyClient(config.get("bitlyAccessToken"));
 
 const URL = "https://www.amazon.co.uk";
-const search_term = "/s?k=RTX+2060";
+const productToSearch = "RTX 2060";
+const searchURL = "/s?k=" + productToSearch.replace(" ", "+");
+const searchTerms = productToSearch.split(" ");
 const link_regex = new RegExp(/^\/(?!gp).*/i);
 let discount_products = [];
 let $ = null;
@@ -21,16 +23,7 @@ const Product = require("./Product");
         defaultViewport: null
     });
     const page = await browser.newPage();
-    await page.goto(URL + search_term, { waitUntil: "networkidle2" });
-
-    // Accept The Page Cookies
-    // try {
-    //     await page.click("input#sp-cc-accept");
-    //     console.log("Accepted Cookies.");
-    // } catch (err) {
-    //     console.log("Cookies Already Accepted.");
-    // }
-    // await page.reload({ waitUntil: "networkidle2" });
+    await page.goto(URL + searchURL, { waitUntil: "networkidle2" });
 
     // Load The HTML Into Variable
     let page_html = await page.evaluate(() => document.body.innerHTML);
@@ -118,13 +111,18 @@ const Product = require("./Product");
 
     await browser.close();
 
+    // Remove Products That Do Not Fully Match Search Terms
+    let filteredProducts = discount_products.filter((product) =>
+        searchTerms.every((term) => product.title.includes(term))
+    );
+
     // Order Products By Highest Discount
-    discount_products.sort(
+    filteredProducts.sort(
         (a, b) => parseFloat(b.discountAmount) - parseFloat(a.discountAmount)
     );
 
     // Display The Results
-    discount_products.forEach((product) => console.log(product.getInfo()));
+    filteredProducts.forEach((product) => console.log(product.getInfo()));
 })();
 
 async function shorternURL(URL) {
